@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Newcastle City - Harbour Fishing</title>
+<style>
+  :root{
+    --bevel-light:#ffffff;
+    --bevel-mid:#c0c0c0;
+    --bevel-dark:#808080;
+    --bevel-black:#000000;
+    --win-blue:#000080;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    font-family:"Verdana","Tahoma",Arial,sans-serif;
+    background:#000 url("assets/harbour-web.jpg") center center / cover no-repeat fixed;
+    color:#000;
+    overflow:hidden;
+    user-select:none;
+    -webkit-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  /* on iOS fixed backgrounds misbehave, so use a real image layer */
+  #photo{
+    position:fixed;inset:0;z-index:0;
+    background:url("assets/harbour-web.jpg") center center / cover no-repeat;
+  }
+
+  /* ---- 90s title strip ---- */
+  #title{
+    position:fixed;top:0;left:0;right:0;z-index:5;
+    background:var(--bevel-mid);
+    border-bottom:2px solid var(--bevel-dark);
+    box-shadow:inset 1px 1px 0 var(--bevel-light), inset -1px -1px 0 var(--bevel-dark);
+    padding:4px;
+  }
+  #title .inner{
+    background:linear-gradient(90deg,var(--win-blue),#1084d0);
+    color:#fff;font-weight:bold;font-size:14px;padding:3px 8px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  #title .inner .btns span{
+    display:inline-block;width:16px;height:14px;background:var(--bevel-mid);color:#000;
+    font-size:10px;line-height:12px;text-align:center;margin-left:2px;
+    border:1px solid;border-color:var(--bevel-light) var(--bevel-black) var(--bevel-black) var(--bevel-light);
+  }
+
+  /* ---- fishing panel ---- */
+  #panel{
+    position:fixed;z-index:4;
+    left:50%;bottom:6vh;transform:translateX(-50%);
+    width:min(92vw,560px);
+    background:var(--bevel-mid);
+    padding:10px;
+    border:2px solid;
+    border-color:var(--bevel-light) var(--bevel-black) var(--bevel-black) var(--bevel-light);
+    box-shadow:inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 var(--bevel-dark), 6px 6px 0 rgba(0,0,0,.45);
+  }
+  #panel h1{
+    margin:0 0 6px;font-size:13px;text-align:center;letter-spacing:1px;
+  }
+  #msg{
+    font-size:12px;text-align:center;min-height:30px;line-height:15px;margin-bottom:6px;
+    background:#fff;border:2px solid;
+    border-color:var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    padding:4px 6px;
+  }
+  #msg b.good{color:#007a2a}
+  #msg b.bad{color:#b00000}
+
+  /* The 3D bar.  A sunken trough, a raised gradient tube inside it, a glass highlight on top. */
+  #trough{
+    position:relative;height:54px;padding:6px;
+    background:#9a9a9a;
+    border:2px solid;
+    border-color:var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    box-shadow:inset 2px 2px 4px rgba(0,0,0,.5);
+  }
+  #bar{
+    position:relative;height:100%;border-radius:14px;
+    /* colour along the bar: red ends, yellow shoulders, green heart */
+    background:linear-gradient(90deg,
+      #c40000 0%, #ff2a00 10%, #ff9900 25%, #ffe600 35%,
+      #2bd12b 42%, #00a500 50%, #2bd12b 58%,
+      #ffe600 65%, #ff9900 75%, #ff2a00 90%, #c40000 100%);
+    box-shadow:0 2px 0 rgba(0,0,0,.35), inset 0 -8px 10px rgba(0,0,0,.35);
+  }
+  /* cylinder shading on top of the colour, which makes it look round */
+  #bar::before{
+    content:"";position:absolute;inset:0;border-radius:14px;
+    background:linear-gradient(180deg,
+      rgba(255,255,255,.75) 0%, rgba(255,255,255,.35) 22%,
+      rgba(255,255,255,0) 45%, rgba(0,0,0,0) 60%, rgba(0,0,0,.45) 100%);
+    pointer-events:none;
+  }
+  /* tick marks on the green zone edges */
+  #bar .edge{
+    position:absolute;top:-3px;bottom:-3px;width:2px;background:rgba(0,0,0,.55);
+  }
+  /* the rod marker */
+  #marker{
+    position:absolute;top:-10px;bottom:-10px;left:0;width:0;
+    pointer-events:none;will-change:transform;
+  }
+  #marker .needle{
+    position:absolute;top:0;bottom:0;left:-3px;width:6px;
+    background:linear-gradient(90deg,#fff,#d8d8d8 40%,#555);
+    border:1px solid #000;
+    box-shadow:2px 2px 2px rgba(0,0,0,.6);
+  }
+  #marker .cap{
+    position:absolute;left:-9px;top:-12px;width:18px;height:12px;
+    background:linear-gradient(180deg,#fff,#aaa);
+    border:1px solid #000;
+    border-radius:4px 4px 0 0;
+  }
+  #marker .cap::after{
+    content:"";position:absolute;left:4px;bottom:-7px;
+    border:5px solid transparent;border-top:7px solid #000;
+  }
+
+  /* controls */
+  #controls{display:flex;gap:8px;align-items:center;margin-top:12px}
+  button.win{
+    font-family:inherit;font-size:12px;padding:5px 14px;min-width:90px;
+    background:var(--bevel-mid);cursor:pointer;
+    border:2px solid;
+    border-color:var(--bevel-light) var(--bevel-black) var(--bevel-black) var(--bevel-light);
+    box-shadow:inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 var(--bevel-dark);
+  }
+  button.win:active{
+    border-color:var(--bevel-black) var(--bevel-light) var(--bevel-light) var(--bevel-black);
+    box-shadow:none;
+  }
+  #score{
+    margin-left:auto;font-size:12px;
+    background:#000;color:#0f0;font-family:"Courier New",monospace;
+    padding:4px 8px;border:2px solid;
+    border-color:var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+    white-space:nowrap;
+  }
+
+  /* the fish that appears on a catch */
+  #fish{
+    position:fixed;z-index:6;left:50%;top:50%;
+    transform:translate(-50%,-50%) scale(0);
+    font-size:72px;filter:drop-shadow(3px 3px 0 rgba(0,0,0,.6));
+    pointer-events:none;transition:transform .35s cubic-bezier(.2,1.6,.5,1);
+  }
+  #fish.show{transform:translate(-50%,-70%) scale(1)}
+
+  /* a whole-screen hit area so taps anywhere count */
+  #tap{position:fixed;inset:0;z-index:3}
+
+  #foot{
+    position:fixed;bottom:0;left:0;right:0;z-index:5;
+    font-size:10px;color:#fff;text-shadow:1px 1px 0 #000;
+    text-align:center;padding:3px;background:rgba(0,0,0,.35);
+  }
+  @media (max-height:520px){
+    #panel{bottom:28px}
+    #foot{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="photo"></div>
+<div id="tap"></div>
+
+<div id="title">
+  <div class="inner">
+    <span>Newcastle City - Harbour</span>
+    <span class="btns"><span>_</span><span>&#9633;</span><span>&times;</span></span>
+  </div>
+</div>
+
+<div id="fish">🐟</div>
+
+<div id="panel">
+  <h1>FISHING</h1>
+  <div id="msg">Press <b>Cast</b> then hit <b>SPACE</b>, click, or tap when the marker is in the green.</div>
+
+  <div id="trough">
+    <div id="bar">
+      <div class="edge" id="edgeL"></div>
+      <div class="edge" id="edgeR"></div>
+      <div id="marker"><div class="cap"></div><div class="needle"></div></div>
+    </div>
+  </div>
+
+  <div id="controls">
+    <button class="win" id="cast">Cast</button>
+    <span id="score">FISH: 0 &nbsp;BEST: 0</span>
+  </div>
+</div>
+
+<div id="foot">Newcastle Harbour, NSW &middot; best viewed at 800x600 &middot; a Newcastle-City page</div>
+
+<script>
+(function(){
+  // ---- tuning ----
+  const GREEN = [0.40, 0.60];     // fraction of the bar that counts as a catch
+  const PERFECT = [0.47, 0.53];   // extra praise if you hit the heart of it
+  const BASE_SPEED = 0.55;        // sweeps per second at the start
+  const SPEED_GROWTH = 0.08;      // added per fish caught
+
+  const bar = document.getElementById('bar');
+  const marker = document.getElementById('marker');
+  const msg = document.getElementById('msg');
+  const cast = document.getElementById('cast');
+  const scoreEl = document.getElementById('score');
+  const fish = document.getElementById('fish');
+
+  document.getElementById('edgeL').style.left = (GREEN[0]*100)+'%';
+  document.getElementById('edgeR').style.left = (GREEN[1]*100)+'%';
+
+  let running = false;
+  let t0 = 0;
+  let pos = 0;              // 0..1 along the bar
+  let caught = 0;
+  let best = 0;
+  try{ best = parseInt(localStorage.getItem('nc-fish-best')||'0',10)||0; }catch(e){}
+  let misses = 0;
+  let raf = 0;
+
+  function speed(){ return BASE_SPEED + caught*SPEED_GROWTH; }
+
+  function showScore(){
+    scoreEl.innerHTML = 'FISH: '+caught+' &nbsp;BEST: '+best;
+  }
+
+  function place(p){
+    marker.style.left = (p*100)+'%';
+  }
+
+  function frame(now){
+    if(!running) return;
+    const t = (now - t0)/1000;
+    // triangle wave 0 -> 1 -> 0, eased at the ends so it slows at the red
+    const phase = (t*speed()) % 1;
+    const tri = phase < 0.5 ? phase*2 : 2 - phase*2;
+    pos = 0.5 - 0.5*Math.cos(tri*Math.PI);   // ease in and out at both ends
+    place(pos);
+    raf = requestAnimationFrame(frame);
+  }
+
+  function start(){
+    running = true;
+    t0 = performance.now() - Math.random()*800; // random starting point
+    fish.classList.remove('show');
+    msg.innerHTML = 'Wait for it... hit <b>SPACE</b>, click, or tap in the green!';
+    cast.textContent = 'Reel!';
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(frame);
+  }
+
+  function stop(){
+    running = false;
+    cancelAnimationFrame(raf);
+    const p = pos;
+    if(p >= GREEN[0] && p <= GREEN[1]){
+      caught++;
+      misses = 0;
+      if(caught > best){ best = caught; try{ localStorage.setItem('nc-fish-best', String(best)); }catch(e){} }
+      const perfect = p >= PERFECT[0] && p <= PERFECT[1];
+      msg.innerHTML = perfect
+        ? '<b class="good">PERFECT CAST!</b> You caught a fish. The next one is faster.'
+        : '<b class="good">You caught a fish!</b> The next one is faster.';
+      fish.classList.add('show');
+    }else{
+      misses++;
+      caught = 0;
+      msg.innerHTML = '<b class="bad">It got away!</b> ' +
+        (p < GREEN[0] ? 'Too early.' : 'Too late.') + ' Cast again.';
+    }
+    showScore();
+    cast.textContent = 'Cast';
+  }
+
+  function action(e){
+    if(e && e.type === 'keydown'){
+      if(e.code !== 'Space' && e.key !== 'Enter') return;
+      e.preventDefault();
+    }
+    if(running) stop(); else start();
+  }
+
+  cast.addEventListener('click', function(e){ e.stopPropagation(); action(e); });
+  document.getElementById('tap').addEventListener('pointerdown', action);
+  document.getElementById('panel').addEventListener('pointerdown', function(e){
+    if(e.target.closest('button')) return;
+    action(e);
+  });
+  window.addEventListener('keydown', action);
+
+  showScore();
+  place(0.5);
+})();
+</script>
+</body>
+</html>
