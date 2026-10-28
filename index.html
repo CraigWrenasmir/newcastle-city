@@ -6,198 +6,223 @@
 <title>Newcastle City - Harbour Fishing</title>
 <style>
   :root{
-    --bevel-light:#ffffff;
-    --bevel-mid:#c0c0c0;
-    --bevel-dark:#808080;
-    --bevel-black:#000000;
-    --win-blue:#000080;
+    --mac-grey:#dddddd;
+    --mac-light:#ffffff;
+    --mac-mid:#aaaaaa;
+    --mac-dark:#555555;
+    --mac-black:#000000;
+    --menu-h:20px;
+    --title-h:20px;
   }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0}
   body{
-    font-family:"Verdana","Tahoma",Arial,sans-serif;
-    background:#000 url("assets/harbour-web.jpg") center center / cover no-repeat fixed;
-    color:#000;
-    overflow:hidden;
-    user-select:none;
-    -webkit-user-select:none;
-    -webkit-tap-highlight-color:transparent;
-  }
-  /* on iOS fixed backgrounds misbehave, so use a real image layer */
-  #photo{
-    position:fixed;inset:0;z-index:0;
-    background:url("assets/harbour-web.jpg") center center / cover no-repeat;
+    font-family:"Charcoal","Chicago","Geneva",Verdana,Tahoma,sans-serif;
+    /* classic grey desktop pattern */
+    background:#888 repeating-conic-gradient(#7d7d7d 0 25%,#929292 0 50%) 0 0/4px 4px;
+    color:#000;overflow:hidden;
+    user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
   }
 
-  /* ---- 90s title strip ---- */
-  #title{
-    position:fixed;top:0;left:0;right:0;z-index:5;
-    background:var(--bevel-mid);
-    border-bottom:2px solid var(--bevel-dark);
-    box-shadow:inset 1px 1px 0 var(--bevel-light), inset -1px -1px 0 var(--bevel-dark);
-    padding:4px;
+  /* ---- menu bar ---- */
+  #menubar{
+    position:fixed;top:0;left:0;right:0;height:var(--menu-h);z-index:10;
+    background:#fff;border-bottom:1px solid #000;
+    font-size:12px;line-height:19px;padding:0 10px;
+    display:flex;gap:16px;align-items:center;white-space:nowrap;overflow:hidden;
   }
-  #title .inner{
-    background:linear-gradient(90deg,var(--win-blue),#1084d0);
-    color:#fff;font-weight:bold;font-size:14px;padding:3px 8px;
-    display:flex;justify-content:space-between;align-items:center;
+  #menubar .apple{font-size:14px;line-height:1}
+  #menubar .right{margin-left:auto;display:flex;gap:14px}
+
+  /* ---- the Mac window ---- */
+  #win{
+    position:fixed;z-index:1;
+    top:calc(var(--menu-h) + 10px);left:10px;right:10px;bottom:10px;
+    background:var(--mac-grey);
+    border:1px solid #000;
+    box-shadow:inset 1px 1px 0 var(--mac-light), inset -1px -1px 0 var(--mac-dark), 2px 2px 0 rgba(0,0,0,.6);
+    display:flex;flex-direction:column;
   }
-  #title .inner .btns span{
-    display:inline-block;width:16px;height:14px;background:var(--bevel-mid);color:#000;
-    font-size:10px;line-height:12px;text-align:center;margin-left:2px;
-    border:1px solid;border-color:var(--bevel-light) var(--bevel-black) var(--bevel-black) var(--bevel-light);
+  #titlebar{
+    height:var(--title-h);flex:none;position:relative;
+    margin:1px;
+    border-bottom:1px solid #000;
+    background:
+      repeating-linear-gradient(180deg, var(--mac-grey) 0 2px, #000 2px 3px) 0 3px / 100% calc(100% - 6px) no-repeat,
+      var(--mac-grey);
+    display:flex;align-items:center;justify-content:center;
+  }
+  #titlebar .box{
+    position:absolute;top:3px;width:13px;height:13px;
+    background:var(--mac-grey);border:1px solid #000;
+    box-shadow:inset 1px 1px 0 #fff, inset -1px -1px 0 #888;
+  }
+  #titlebar .close{left:8px}
+  #titlebar .zoom{right:8px}
+  #titlebar .zoom::after{content:"";position:absolute;left:2px;top:2px;width:6px;height:6px;border:1px solid #000;border-right:0;border-bottom:0}
+  #titlebar .collapse{right:26px}
+  #titlebar .collapse::after{content:"";position:absolute;left:2px;top:5px;width:7px;height:1px;background:#000}
+  #titlebar .name{
+    position:relative;background:var(--mac-grey);padding:0 10px;
+    font-size:12px;font-weight:bold;line-height:18px;letter-spacing:.2px;
+  }
+  #content{
+    flex:1;position:relative;margin:0 1px 1px;overflow:hidden;
+    border:1px solid #000;
+    background:#000 url("assets/harbour-web.jpg") center center / cover no-repeat;
   }
 
-  /* ---- fishing panel ---- */
+  /* ---- the vertical skill bar panel, a fifth of the way across ---- */
   #panel{
-    position:fixed;z-index:4;
-    left:50%;bottom:6vh;transform:translateX(-50%);
-    width:min(92vw,560px);
-    background:var(--bevel-mid);
-    padding:10px;
-    border:2px solid;
-    border-color:var(--bevel-light) var(--bevel-black) var(--bevel-black) var(--bevel-light);
-    box-shadow:inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 var(--bevel-dark), 6px 6px 0 rgba(0,0,0,.45);
+    position:absolute;z-index:4;
+    left:20%;top:50%;transform:translate(-50%,-50%);
+    width:104px;
+    background:var(--mac-grey);
+    border:1px solid #000;
+    box-shadow:inset 1px 1px 0 #fff, inset -1px -1px 0 #888, 3px 3px 0 rgba(0,0,0,.55);
+    padding:8px 8px 8px;
+    display:flex;flex-direction:column;align-items:center;gap:8px;
   }
-  #panel h1{
-    margin:0 0 6px;font-size:13px;text-align:center;letter-spacing:1px;
-  }
-  #msg{
-    font-size:12px;text-align:center;min-height:30px;line-height:15px;margin-bottom:6px;
-    background:#fff;border:2px solid;
-    border-color:var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
-    padding:4px 6px;
-  }
-  #msg b.good{color:#007a2a}
-  #msg b.bad{color:#b00000}
+  #panel h1{margin:0;font-size:11px;letter-spacing:1px;text-align:center}
 
-  /* The 3D bar.  A sunken trough, a raised gradient tube inside it, a glass highlight on top. */
+  /* Platinum-style sunken well holding the 3D bar */
   #trough{
-    position:relative;height:54px;padding:6px;
-    background:#9a9a9a;
-    border:2px solid;
-    border-color:var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
-    box-shadow:inset 2px 2px 4px rgba(0,0,0,.5);
+    width:52px;height:min(54vh,420px);padding:5px;position:relative;
+    background:#c8c8c8;
+    border:1px solid #000;
+    box-shadow:inset 1px 1px 0 #777, inset 2px 2px 0 #a8a8a8, inset -1px -1px 0 #fff;
   }
   #bar{
-    position:relative;height:100%;border-radius:14px;
-    /* colour along the bar: red ends, yellow shoulders, green heart */
-    background:linear-gradient(90deg,
-      #c40000 0%, #ff2a00 10%, #ff9900 25%, #ffe600 35%,
-      #2bd12b 42%, #00a500 50%, #2bd12b 58%,
-      #ffe600 65%, #ff9900 75%, #ff2a00 90%, #c40000 100%);
-    box-shadow:0 2px 0 rgba(0,0,0,.35), inset 0 -8px 10px rgba(0,0,0,.35);
-  }
-  /* cylinder shading on top of the colour, which makes it look round */
-  #bar::before{
-    content:"";position:absolute;inset:0;border-radius:14px;
+    position:relative;width:100%;height:100%;border-radius:20px;
+    /* colour down the bar: red ends, yellow shoulders, green heart */
     background:linear-gradient(180deg,
-      rgba(255,255,255,.75) 0%, rgba(255,255,255,.35) 22%,
-      rgba(255,255,255,0) 45%, rgba(0,0,0,0) 60%, rgba(0,0,0,.45) 100%);
+      #b20000 0%, #ff2a00 10%, #ff9900 25%, #ffe600 35%,
+      #2bd12b 42%, #00a500 50%, #2bd12b 58%,
+      #ffe600 65%, #ff9900 75%, #ff2a00 90%, #b20000 100%);
+    box-shadow:2px 0 0 rgba(0,0,0,.25), inset -7px 0 10px rgba(0,0,0,.4), inset 2px 0 3px rgba(255,255,255,.3);
+  }
+  /* cylinder shading across the bar so it reads as a round tube, lit from the top-left like a Mac */
+  #bar::before{
+    content:"";position:absolute;inset:0;border-radius:20px;
+    background:linear-gradient(90deg,
+      rgba(255,255,255,.1) 0%, rgba(255,255,255,.85) 18%, rgba(255,255,255,.35) 32%,
+      rgba(255,255,255,0) 50%, rgba(0,0,0,0) 62%, rgba(0,0,0,.5) 100%);
     pointer-events:none;
   }
-  /* tick marks on the green zone edges */
-  #bar .edge{
-    position:absolute;top:-3px;bottom:-3px;width:2px;background:rgba(0,0,0,.55);
+  /* end caps so the tube looks like it has depth */
+  #bar::after{
+    content:"";position:absolute;left:0;right:0;top:0;bottom:0;border-radius:20px;
+    box-shadow:inset 0 6px 6px -4px rgba(255,255,255,.7), inset 0 -8px 8px -4px rgba(0,0,0,.55);
+    pointer-events:none;
   }
-  /* the rod marker */
-  #marker{
-    position:absolute;top:-10px;bottom:-10px;left:0;width:0;
-    pointer-events:none;will-change:transform;
-  }
+  /* green zone edge ticks */
+  #bar .edge{position:absolute;left:-3px;right:-3px;height:2px;background:rgba(0,0,0,.6)}
+
+  /* the rod marker: a chrome needle across the tube with a pointer on the left */
+  #marker{position:absolute;left:-12px;right:-9px;top:0;height:0;pointer-events:none;will-change:top}
   #marker .needle{
-    position:absolute;top:0;bottom:0;left:-3px;width:6px;
-    background:linear-gradient(90deg,#fff,#d8d8d8 40%,#555);
+    position:absolute;left:0;right:0;top:-3px;height:6px;
+    background:linear-gradient(180deg,#fff,#d8d8d8 40%,#555);
     border:1px solid #000;
     box-shadow:2px 2px 2px rgba(0,0,0,.6);
   }
   #marker .cap{
-    position:absolute;left:-9px;top:-12px;width:18px;height:12px;
-    background:linear-gradient(180deg,#fff,#aaa);
-    border:1px solid #000;
-    border-radius:4px 4px 0 0;
+    position:absolute;left:-16px;top:-11px;width:16px;height:22px;
+    background:linear-gradient(90deg,#fff,#bbb 60%,#777);
+    border:1px solid #000;border-radius:5px 0 0 5px;
+    box-shadow:2px 2px 2px rgba(0,0,0,.5);
   }
   #marker .cap::after{
-    content:"";position:absolute;left:4px;bottom:-7px;
-    border:5px solid transparent;border-top:7px solid #000;
+    content:"";position:absolute;right:-11px;top:3px;
+    border:7px solid transparent;border-left:10px solid #000;
   }
 
-  /* controls */
-  #controls{display:flex;gap:8px;align-items:center;margin-top:12px}
-  button.win{
-    font-family:inherit;font-size:12px;padding:5px 14px;min-width:90px;
-    background:var(--bevel-mid);cursor:pointer;
-    border:2px solid;
-    border-color:var(--bevel-light) var(--bevel-black) var(--bevel-black) var(--bevel-light);
-    box-shadow:inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 var(--bevel-dark);
+  /* Platinum push button */
+  button.mac{
+    font-family:inherit;font-size:12px;font-weight:bold;
+    width:100%;padding:4px 0;cursor:pointer;color:#000;
+    background:linear-gradient(180deg,#fff,#d9d9d9);
+    border:1px solid #000;border-radius:7px;
+    box-shadow:inset 1px 1px 0 #fff, inset -1px -1px 0 #888, 1px 1px 0 #000;
   }
-  button.win:active{
-    border-color:var(--bevel-black) var(--bevel-light) var(--bevel-light) var(--bevel-black);
-    box-shadow:none;
+  button.mac:active{
+    background:linear-gradient(180deg,#5a5a5a,#8a8a8a);color:#fff;
+    box-shadow:inset 1px 1px 0 #333, inset -1px -1px 0 #bbb;
   }
   #score{
-    margin-left:auto;font-size:12px;
-    background:#000;color:#0f0;font-family:"Courier New",monospace;
-    padding:4px 8px;border:2px solid;
-    border-color:var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
-    white-space:nowrap;
+    width:100%;font-size:10px;text-align:center;line-height:13px;
+    background:#fff;border:1px solid #000;padding:3px 2px;
+    box-shadow:inset 1px 1px 0 #999;
+    font-family:"Monaco","Courier New",monospace;
   }
+
+  /* message: a little Mac alert box beside the bar */
+  #msg{
+    position:absolute;z-index:4;
+    left:calc(20% + 70px);top:50%;transform:translateY(-50%);
+    width:min(240px,calc(80% - 110px));
+    background:#fff;border:1px solid #000;
+    box-shadow:inset 0 0 0 2px #fff, inset 0 0 0 3px #000, 3px 3px 0 rgba(0,0,0,.55);
+    padding:12px 12px 12px 14px;
+    font-size:12px;line-height:16px;
+  }
+  #msg b.good{color:#007a2a}
+  #msg b.bad{color:#b00000}
 
   /* the fish that appears on a catch */
   #fish{
-    position:fixed;z-index:6;left:50%;top:50%;
+    position:absolute;z-index:6;left:55%;top:60%;
     transform:translate(-50%,-50%) scale(0);
     font-size:72px;filter:drop-shadow(3px 3px 0 rgba(0,0,0,.6));
     pointer-events:none;transition:transform .35s cubic-bezier(.2,1.6,.5,1);
   }
-  #fish.show{transform:translate(-50%,-70%) scale(1)}
+  #fish.show{transform:translate(-50%,-90%) scale(1)}
 
-  /* a whole-screen hit area so taps anywhere count */
-  #tap{position:fixed;inset:0;z-index:3}
+  /* whole-window hit area so taps anywhere count */
+  #tap{position:absolute;inset:0;z-index:3}
 
-  #foot{
-    position:fixed;bottom:0;left:0;right:0;z-index:5;
-    font-size:10px;color:#fff;text-shadow:1px 1px 0 #000;
-    text-align:center;padding:3px;background:rgba(0,0,0,.35);
-  }
-  @media (max-height:520px){
-    #panel{bottom:28px}
-    #foot{display:none}
+  @media (max-width:600px){
+    #panel{left:18%}
+    #msg{left:auto;right:10px;top:auto;bottom:12px;transform:none;width:calc(100% - 20px)}
+    #trough{height:min(50vh,360px)}
   }
 </style>
 </head>
 <body>
-<div id="photo"></div>
-<div id="tap"></div>
 
-<div id="title">
-  <div class="inner">
-    <span>Newcastle City - Harbour</span>
-    <span class="btns"><span>_</span><span>&#9633;</span><span>&times;</span></span>
-  </div>
+<div id="menubar">
+  <span class="apple">&#63743;</span>
+  <span><b>File</b></span><span>Edit</span><span>View</span><span>Special</span><span>Fish</span>
+  <span class="right"><span id="clock"></span></span>
 </div>
 
-<div id="fish">🐟</div>
+<div id="win">
+  <div id="titlebar">
+    <span class="box close"></span>
+    <span class="name">Newcastle Harbour</span>
+    <span class="box collapse"></span>
+    <span class="box zoom"></span>
+  </div>
+  <div id="content">
+    <div id="tap"></div>
+    <div id="fish">🐟</div>
 
-<div id="panel">
-  <h1>FISHING</h1>
-  <div id="msg">Press <b>Cast</b> then hit <b>SPACE</b>, click, or tap when the marker is in the green.</div>
-
-  <div id="trough">
-    <div id="bar">
-      <div class="edge" id="edgeL"></div>
-      <div class="edge" id="edgeR"></div>
-      <div id="marker"><div class="cap"></div><div class="needle"></div></div>
+    <div id="panel">
+      <h1>FISHING</h1>
+      <div id="trough">
+        <div id="bar">
+          <div class="edge" id="edgeT"></div>
+          <div class="edge" id="edgeB"></div>
+          <div id="marker"><div class="cap"></div><div class="needle"></div></div>
+        </div>
+      </div>
+      <button class="mac" id="cast">Cast</button>
+      <div id="score">FISH 0<br>BEST 0</div>
     </div>
-  </div>
 
-  <div id="controls">
-    <button class="win" id="cast">Cast</button>
-    <span id="score">FISH: 0 &nbsp;BEST: 0</span>
+    <div id="msg">Press <b>Cast</b>, then hit <b>SPACE</b>, click, or tap when the marker is in the green.</div>
   </div>
 </div>
-
-<div id="foot">Newcastle Harbour, NSW &middot; best viewed at 800x600 &middot; a Newcastle-City page</div>
 
 <script>
 (function(){
@@ -207,49 +232,35 @@
   const BASE_SPEED = 0.55;        // sweeps per second at the start
   const SPEED_GROWTH = 0.08;      // added per fish caught
 
-  const bar = document.getElementById('bar');
   const marker = document.getElementById('marker');
   const msg = document.getElementById('msg');
   const cast = document.getElementById('cast');
   const scoreEl = document.getElementById('score');
   const fish = document.getElementById('fish');
 
-  document.getElementById('edgeL').style.left = (GREEN[0]*100)+'%';
-  document.getElementById('edgeR').style.left = (GREEN[1]*100)+'%';
+  document.getElementById('edgeT').style.top = (GREEN[0]*100)+'%';
+  document.getElementById('edgeB').style.top = (GREEN[1]*100)+'%';
 
-  let running = false;
-  let t0 = 0;
-  let pos = 0;              // 0..1 along the bar
-  let caught = 0;
-  let best = 0;
+  let running = false, t0 = 0, pos = 0.5, caught = 0, best = 0, raf = 0;
   try{ best = parseInt(localStorage.getItem('nc-fish-best')||'0',10)||0; }catch(e){}
-  let misses = 0;
-  let raf = 0;
 
   function speed(){ return BASE_SPEED + caught*SPEED_GROWTH; }
-
-  function showScore(){
-    scoreEl.innerHTML = 'FISH: '+caught+' &nbsp;BEST: '+best;
-  }
-
-  function place(p){
-    marker.style.left = (p*100)+'%';
-  }
+  function showScore(){ scoreEl.innerHTML = 'FISH '+caught+'<br>BEST '+best; }
+  function place(p){ marker.style.top = (p*100)+'%'; }
 
   function frame(now){
     if(!running) return;
     const t = (now - t0)/1000;
-    // triangle wave 0 -> 1 -> 0, eased at the ends so it slows at the red
     const phase = (t*speed()) % 1;
-    const tri = phase < 0.5 ? phase*2 : 2 - phase*2;
-    pos = 0.5 - 0.5*Math.cos(tri*Math.PI);   // ease in and out at both ends
+    const tri = phase < 0.5 ? phase*2 : 2 - phase*2;   // 0 -> 1 -> 0
+    pos = 0.5 - 0.5*Math.cos(tri*Math.PI);              // ease at both ends
     place(pos);
     raf = requestAnimationFrame(frame);
   }
 
   function start(){
     running = true;
-    t0 = performance.now() - Math.random()*800; // random starting point
+    t0 = performance.now() - Math.random()*800;
     fish.classList.remove('show');
     msg.innerHTML = 'Wait for it... hit <b>SPACE</b>, click, or tap in the green!';
     cast.textContent = 'Reel!';
@@ -263,7 +274,6 @@
     const p = pos;
     if(p >= GREEN[0] && p <= GREEN[1]){
       caught++;
-      misses = 0;
       if(caught > best){ best = caught; try{ localStorage.setItem('nc-fish-best', String(best)); }catch(e){} }
       const perfect = p >= PERFECT[0] && p <= PERFECT[1];
       msg.innerHTML = perfect
@@ -271,10 +281,8 @@
         : '<b class="good">You caught a fish!</b> The next one is faster.';
       fish.classList.add('show');
     }else{
-      misses++;
       caught = 0;
-      msg.innerHTML = '<b class="bad">It got away!</b> ' +
-        (p < GREEN[0] ? 'Too early.' : 'Too late.') + ' Cast again.';
+      msg.innerHTML = '<b class="bad">It got away!</b> ' + (p < GREEN[0] ? 'Too high.' : 'Too low.') + ' Cast again.';
     }
     showScore();
     cast.textContent = 'Cast';
@@ -291,10 +299,20 @@
   cast.addEventListener('click', function(e){ e.stopPropagation(); action(e); });
   document.getElementById('tap').addEventListener('pointerdown', action);
   document.getElementById('panel').addEventListener('pointerdown', function(e){
-    if(e.target.closest('button')) return;
-    action(e);
+    if(e.target.closest('button')) return; action(e);
   });
+  document.getElementById('msg').addEventListener('pointerdown', action);
   window.addEventListener('keydown', action);
+
+  // menu bar clock, the old Mac way
+  const clock = document.getElementById('clock');
+  function tick(){
+    const d = new Date();
+    let h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    clock.textContent = h + ':' + (m < 10 ? '0' : '') + m + ' ' + ap;
+  }
+  tick(); setInterval(tick, 15000);
 
   showScore();
   place(0.5);
