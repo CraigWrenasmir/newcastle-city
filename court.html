@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Newcastle City - Bocce Court</title>
+<style>
+  :root{
+    --mac-grey:#dddddd;--mac-light:#fff;--mac-dark:#555;
+    --menu-h:20px;--title-h:20px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    font-family:"Charcoal","Chicago","Geneva",Verdana,Tahoma,sans-serif;
+    background:#888 repeating-conic-gradient(#7d7d7d 0 25%,#929292 0 50%) 0 0/4px 4px;
+    color:#000;overflow:hidden;
+    user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
+  }
+
+  /* ---- menu bar ---- */
+  #menubar{
+    position:fixed;top:0;left:0;right:0;height:var(--menu-h);z-index:20;
+    background:#fff;border-bottom:1px solid #000;
+    font-size:12px;line-height:19px;padding:0 10px;
+    display:flex;gap:0;align-items:center;white-space:nowrap;
+  }
+  #menubar .apple{font-size:14px;line-height:1;padding:0 8px 0 0}
+  #menubar .menu{position:relative;padding:0 8px;cursor:default}
+  #menubar .menu.open,#menubar .menu:active{background:#000;color:#fff}
+  #menubar .menu .drop{
+    display:none;position:absolute;left:0;top:20px;min-width:170px;
+    background:#fff;border:1px solid #000;box-shadow:2px 2px 0 rgba(0,0,0,.6);
+    color:#000;padding:2px 0;
+  }
+  #menubar .menu.open .drop{display:block}
+  #menubar .drop div{padding:1px 18px;line-height:17px}
+  #menubar .drop div:hover{background:#000;color:#fff}
+  #menubar .drop hr{border:0;border-top:1px solid #000;margin:2px 0;opacity:.5}
+  #menubar .drop div.dim{color:#888}
+  #menubar .drop div.dim:hover{background:none;color:#888}
+  #menubar .right{margin-left:auto;display:flex;gap:14px}
+
+  /* ---- the Mac window ---- */
+  #win{
+    position:fixed;z-index:1;
+    top:calc(var(--menu-h) + 10px);left:10px;right:10px;bottom:10px;
+    background:var(--mac-grey);border:1px solid #000;
+    box-shadow:inset 1px 1px 0 var(--mac-light), inset -1px -1px 0 var(--mac-dark), 2px 2px 0 rgba(0,0,0,.6);
+    display:flex;flex-direction:column;
+  }
+  #titlebar{
+    height:var(--title-h);flex:none;position:relative;margin:1px;border-bottom:1px solid #000;
+    background:
+      repeating-linear-gradient(180deg, var(--mac-grey) 0 2px, #000 2px 3px) 0 3px / 100% calc(100% - 6px) no-repeat,
+      var(--mac-grey);
+    display:flex;align-items:center;justify-content:center;
+  }
+  #titlebar .box{position:absolute;top:3px;width:13px;height:13px;background:var(--mac-grey);border:1px solid #000;box-shadow:inset 1px 1px 0 #fff, inset -1px -1px 0 #888}
+  #titlebar .close{left:8px}
+  #titlebar .zoom{right:8px}
+  #titlebar .zoom::after{content:"";position:absolute;left:2px;top:2px;width:6px;height:6px;border:1px solid #000;border-right:0;border-bottom:0}
+  #titlebar .collapse{right:26px}
+  #titlebar .collapse::after{content:"";position:absolute;left:2px;top:5px;width:7px;height:1px;background:#000}
+  #titlebar .name{position:relative;background:var(--mac-grey);padding:0 10px;font-size:12px;font-weight:bold;line-height:18px}
+  #content{flex:1;position:relative;margin:0 1px 1px;overflow:hidden;border:1px solid #000;background:#000}
+
+  /* the photo, sized to cover, with a stage div matched to it so coordinates stay true */
+  #stage{position:absolute;left:0;top:0;width:100px;height:100px;background:url("assets/bocce-web.jpg") 0 0 / 100% 100% no-repeat;cursor:default}
+  #stage.court-hover{cursor:crosshair}
+  #night{position:absolute;inset:0;pointer-events:none;background:#0b1a3a;opacity:0;transition:opacity 2s;mix-blend-mode:multiply}
+  #night2{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,#16254d,#2a3a66);opacity:0;transition:opacity 2s;mix-blend-mode:screen}
+  body.night #night{opacity:.72}
+  body.night #night2{opacity:.18}
+
+  /* plants */
+  .plant{
+    position:absolute;width:100px;height:120px;margin-left:-50px;margin-top:-120px;
+    transform-origin:50% 100%;pointer-events:none;
+  }
+  .plant svg{width:100%;height:100%;display:block;overflow:visible;transform-origin:50% 100%;animation:sway var(--sway,4s) ease-in-out infinite alternate}
+  .plant.pop svg{animation:sway var(--sway,4s) ease-in-out infinite alternate, pop .7s cubic-bezier(.2,1.4,.5,1)}
+  .plant.fail svg{animation:fade 4s ease-in forwards}
+  @keyframes sway{from{transform:rotate(-1.4deg)}to{transform:rotate(1.4deg)}}
+  @keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
+  @keyframes fade{to{opacity:0}}
+
+  /* seed packets */
+  #packets{
+    position:absolute;left:12px;top:12px;z-index:5;display:flex;gap:6px;flex-wrap:wrap;max-width:60%;
+  }
+  .packet{
+    width:58px;height:74px;background:#fdf6dc;border:1px solid #000;position:relative;cursor:pointer;
+    box-shadow:inset 1px 1px 0 #fff, 2px 2px 0 rgba(0,0,0,.5);font-size:9px;line-height:10px;text-align:center;padding:2px;
+  }
+  .packet .pic{height:40px;margin:2px 0}
+  .packet .pic svg{width:100%;height:100%;overflow:visible}
+  .packet .nm{font-weight:bold}
+  .packet.sel{outline:2px solid #000;outline-offset:1px;background:#fff}
+  .packet.sel::after{content:"";position:absolute;left:-1px;top:-1px;right:-1px;height:6px;background:repeating-linear-gradient(90deg,#c33 0 4px,#fff 4px 8px)}
+
+  /* status strip */
+  #status{
+    position:absolute;right:12px;top:12px;z-index:5;
+    font-family:"Monaco","Courier New",monospace;font-size:10px;line-height:14px;
+    background:#fff;border:1px solid #000;padding:5px 8px;color:#000;
+    box-shadow:inset 1px 1px 0 #999, 2px 2px 0 rgba(0,0,0,.5);text-align:right;max-width:46%;
+  }
+  #status .line{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  #caption{
+    position:absolute;left:0;right:0;top:96px;z-index:5;text-align:center;pointer-events:none;
+    font-size:11px;color:#fff;text-shadow:0 1px 0 #000, 0 0 6px rgba(0,0,0,.8);padding:8px;letter-spacing:.3px;
+  }
+
+  @media (max-width:700px){
+    #packets{max-width:calc(100% - 24px)}
+    #status{left:12px;right:12px;top:auto;bottom:12px;max-width:none;text-align:left;font-size:9px}
+    #caption{top:160px}
+    .packet{width:50px;height:66px}
+  }
+</style>
+</head>
+<body>
+
+<div id="menubar">
+  <span class="apple">&#63743;</span>
+  <span class="menu" data-menu><b>File</b>
+    <div class="drop">
+      <div data-act="clear">Clear the court</div>
+    </div>
+  </span>
+  <span class="menu" data-menu>Edit
+    <div class="drop"><div class="dim">Undo</div><div class="dim">Cut</div><div class="dim">Copy</div><div class="dim">Paste</div></div>
+  </span>
+  <span class="menu" data-menu>View
+    <div class="drop">
+      <div onclick="location.href='index.html'">Harbour</div>
+      <div onclick="location.href='court.html'">Bocce Court</div>
+    </div>
+  </span>
+  <span class="menu" data-menu>Wait
+    <div class="drop">
+      <div data-wait="600000">Ten minutes</div>
+      <div data-wait="3600000">An hour</div>
+      <div data-wait="28800000">A night</div>
+      <div data-wait="86400000">A day</div>
+      <div data-wait="604800000">A week</div>
+      <hr>
+      <div data-act="now">Back to real time</div>
+    </div>
+  </span>
+  <span class="right"><span id="clock"></span></span>
+</div>
+
+<div id="win">
+  <div id="titlebar">
+    <span class="box close"></span>
+    <span class="name">Bocce Court</span>
+    <span class="box collapse"></span>
+    <span class="box zoom"></span>
+  </div>
+  <div id="content">
+    <div id="stage"></div>
+    <div id="night"></div>
+    <div id="night2"></div>
+    <div id="caption">Nobody has played here since 2009. The garden is coming over the fence.</div>
+    <div id="packets"></div>
+    <div id="status"><div class="line" id="s1">0 plants</div><div class="line" id="s2">nothing has bloomed yet</div></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ===== tuning: real time, in milliseconds =====
+  const STAGE_AT = {
+    shoot:  90*1000,          // a shoot after a minute and a half
+    leafy:  8*60*1000,        // leaves after eight minutes
+    bloom:  40*60*1000,       // a flower after forty minutes
+    seeded: 6*3600*1000,      // goes to seed after six hours
+    gone:   40*3600*1000      // withers away after a day and a bit
+  };
+  const CROWD_RADIUS = 2.6;   // percent of stage width; too many neighbours and a seed won't take
+  const CROWD_MAX = 2;
+  const SCATTER_CHANCE = 0.6;  // chance a seeded plant drops a seed nearby
+  const MAX_PLANTS = 140;      // the court can only hold so much
+  const NIGHT_FROM = 19, NIGHT_TO = 6;   // local hours
+
+  // the plantable gravel, as percentages of the photo
+  const COURT = [[5.5,83.5],[78,77.5],[100,85],[100,100],[0,100],[0,89.5]];
+
+  // ===== placeholder plants (your daughter's drawings go here later) =====
+  // each returns SVG for a 100x120 box, rooted at (50,120)
+  const P = {
+    cosmos:{ name:"Cosmos", night:false,
+      draw:(st,n)=>{
+        if(st===0) return seed();
+        if(st===1) return `<path d="M50 120 V95" stroke="#3a7d2a" stroke-width="3" fill="none"/>${leafPair(50,100,10,"#4f9a36")}`;
+        if(st===2) return `<path d="M50 120 V60" stroke="#3a7d2a" stroke-width="3" fill="none"/>${fern(50,100)}${fern(50,80)}${fern(50,66)}`;
+        const open = st===3;
+        const c = open? "#e86aa0":"#b98a6a";
+        return `<path d="M50 120 V40" stroke="#3a7d2a" stroke-width="3" fill="none"/>${fern(50,100)}${fern(50,80)}${fern(50,64)}
+          ${open? daisy(50,34,18,c,"#f6c531",8) : puff(50,34,12,"#d9c7a8")}`;
+      }},
+    nasturtium:{ name:"Nasturtium", night:false,
+      draw:(st,n)=>{
+        if(st===0) return seed();
+        if(st===1) return `<path d="M50 120 V100" stroke="#5a9b2a" stroke-width="3" fill="none"/><circle cx="50" cy="96" r="7" fill="#5fb13a"/>`;
+        if(st===2) return `${lily(38,98,13)}${lily(58,92,16)}${lily(48,80,12)}`;
+        if(st===3) return `${lily(36,100,14)}${lily(60,94,17)}${lily(46,80,13)}
+          ${trumpet(66,72,"#ff8a1f")}${trumpet(34,78,"#ffb21a")}${trumpet(52,64,"#ff6a1f")}`;
+        return `${lily(36,100,14,"#8d9a4a")}${lily(60,94,17,"#9aa650")}${lily(46,80,13,"#8d9a4a")}<circle cx="66" cy="72" r="4" fill="#6b5a3a"/><circle cx="36" cy="78" r="4" fill="#6b5a3a"/>`;
+      }},
+    dandelion:{ name:"Dandelion", night:false,
+      draw:(st,n)=>{
+        if(st===0) return seed();
+        if(st===1) return rosette(50,118,10);
+        if(st===2) return rosette(50,118,20);
+        if(st===3) return `${rosette(50,118,20)}<path d="M50 118 V62" stroke="#6a9b3a" stroke-width="2.5" fill="none"/>${daisy(50,56,12,"#ffd51c","#f0b400",14)}`;
+        return `${rosette(50,118,20,"#9aa36a")}<path d="M50 118 V62" stroke="#9aa36a" stroke-width="2.5" fill="none"/>${puff(50,54,16,"#f5f5f5")}`;
+      }},
+    banana:{ name:"Banana sucker", night:false,
+      draw:(st,n)=>{
+        if(st===0) return seed();
+        if(st===1) return `<path d="M50 120 V100" stroke="#5f9a2d" stroke-width="5" stroke-linecap="round"/><path d="M50 104 q-14 -14 -6 -30 q12 12 6 30z" fill="#6cc04a"/>`;
+        if(st===2) return `<path d="M50 120 V80" stroke="#5f9a2d" stroke-width="7" stroke-linecap="round"/>${paddle(50,84,-50,36)}${paddle(50,86,50,34)}${paddle(50,80,-10,42)}`;
+        return `<path d="M50 120 V56" stroke="#5f9a2d" stroke-width="9" stroke-linecap="round"/>${paddle(50,70,-60,46)}${paddle(50,72,60,44)}${paddle(50,60,-20,52)}${paddle(50,58,25,50)}`;
+      }},
+    primrose:{ name:"Evening primrose", night:true,
+      draw:(st,n)=>{
+        if(st===0) return seed();
+        if(st===1) return `<path d="M50 120 V98" stroke="#4e8a3a" stroke-width="3" fill="none"/>${leafPair(50,104,9,"#5e9e46")}`;
+        if(st===2) return `<path d="M50 120 V62" stroke="#4e8a3a" stroke-width="3" fill="none"/>${leafPair(50,104,12,"#5e9e46")}${leafPair(50,88,12,"#5e9e46")}${leafPair(50,72,10,"#5e9e46")}`;
+        const stem = `<path d="M50 120 V44" stroke="#4e8a3a" stroke-width="3" fill="none"/>${leafPair(50,104,12,"#5e9e46")}${leafPair(50,88,12,"#5e9e46")}${leafPair(50,72,10,"#5e9e46")}`;
+        if(st===3) return stem + (n ? daisy(50,38,16,"#fff27a","#ffe14d",4,true) : `<ellipse cx="50" cy="40" rx="5" ry="10" fill="#c9d45a" stroke="#4e8a3a"/>`);
+        return stem + `<ellipse cx="50" cy="42" rx="4" ry="9" fill="#8a7a4a"/>`;
+      }}
+  };
+  function seed(){ return `<ellipse cx="50" cy="117" rx="3.5" ry="2.2" fill="#3b2a1a"/>`; }
+  function leafPair(x,y,s,c){ return `<path d="M${x} ${y} q-${s*1.4} -${s*.6} -${s*1.6} ${s*.5} q${s*1.2} ${s*.3} ${s*1.6} -${s*.5}z" fill="${c}"/><path d="M${x} ${y} q${s*1.4} -${s*.6} ${s*1.6} ${s*.5} q-${s*1.2} ${s*.3} -${s*1.6} -${s*.5}z" fill="${c}"/>`; }
+  function fern(x,y){ let s=""; for(let i=0;i<4;i++){ const a=-70+i*25; s+=`<path d="M${x} ${y} l${Math.cos(a*Math.PI/180)*18} ${Math.sin(a*Math.PI/180)*18}" stroke="#4f9a36" stroke-width="1.6"/>`; a2=180-a; s+=`<path d="M${x} ${y} l${Math.cos((180-a)*Math.PI/180)*18} ${Math.sin((180-a)*Math.PI/180)*18}" stroke="#4f9a36" stroke-width="1.6"/>`; } return s; }
+  var a2;
+  function daisy(x,y,r,c,cc,petals,wide){ let s=""; const n=petals||8; for(let i=0;i<n;i++){ const a=i*360/n; s+=`<ellipse cx="${x}" cy="${y-r*.6}" rx="${wide?r*.45:r*.28}" ry="${r*.62}" fill="${c}" transform="rotate(${a} ${x} ${y})"/>`; } return s+`<circle cx="${x}" cy="${y}" r="${r*.32}" fill="${cc}"/>`; }
+  function puff(x,y,r,c){ let s=""; for(let i=0;i<16;i++){ const a=i*22.5*Math.PI/180; s+=`<line x1="${x}" y1="${y}" x2="${x+Math.cos(a)*r}" y2="${y+Math.sin(a)*r}" stroke="${c}" stroke-width="1" opacity=".9"/><circle cx="${x+Math.cos(a)*r}" cy="${y+Math.sin(a)*r}" r="1.6" fill="${c}"/>`; } return s+`<circle cx="${x}" cy="${y}" r="3" fill="#b8a888"/>`; }
+  function lily(x,y,r,c){ return `<path d="M${x} 120 Q${x} ${y+10} ${x} ${y}" stroke="#5a9b2a" stroke-width="2" fill="none"/><circle cx="${x}" cy="${y}" r="${r}" fill="${c||"#5fb13a"}" stroke="#3e7a22" stroke-width="1"/><circle cx="${x-r*.3}" cy="${y-r*.3}" r="${r*.25}" fill="rgba(255,255,255,.25)"/>`; }
+  function trumpet(x,y,c){ return `<circle cx="${x}" cy="${y}" r="8" fill="${c}"/><circle cx="${x-3}" cy="${y+3}" r="4" fill="${c}" stroke="#c44" stroke-width="1"/><circle cx="${x+3}" cy="${y+3}" r="4" fill="${c}" stroke="#c44" stroke-width="1"/><circle cx="${x}" cy="${y}" r="2" fill="#7a2a0a"/>`; }
+  function rosette(x,y,s,c){ let r=""; const col=c||"#4c8f2e"; for(let i=0;i<7;i++){ const a=-160+i*20; r+=`<path d="M${x} ${y} q${Math.cos(a*Math.PI/180)*s*.6} ${Math.sin(a*Math.PI/180)*s*.6-4} ${Math.cos(a*Math.PI/180)*s} ${Math.sin(a*Math.PI/180)*s} q-${Math.cos(a*Math.PI/180)*s*.3} 2 -${Math.cos(a*Math.PI/180)*s} -${Math.sin(a*Math.PI/180)*s}z" fill="${col}"/>`; } return r; }
+  function paddle(x,y,ang,len){ return `<path d="M${x} ${y} q${len*.3} -${len*.35} ${len*.9} -${len*.2} q-${len*.2} ${len*.35} -${len*.9} ${len*.2}z" fill="#5fb13a" stroke="#3e8a22" stroke-width="1" transform="rotate(${ang} ${x} ${y})"/>`; }
+
+  // ===== state =====
+  const stage = document.getElementById('stage');
+  const content = document.getElementById('content');
+  const packetsEl = document.getElementById('packets');
+  const s1 = document.getElementById('s1'), s2 = document.getElementById('s2');
+  const KEY = 'nc-court';
+  let plants = [];
+  let offset = 0;                 // time skipped with the Wait menu
+  let lastBloom = 0;
+  let selected = 'any';
+  try{
+    const d = JSON.parse(localStorage.getItem(KEY)||'{}');
+    plants = d.plants||[]; offset = d.offset||0; lastBloom = d.lastBloom||0;
+  }catch(e){}
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify({plants,offset,lastBloom})); }catch(e){} }
+  function now(){ return Date.now() + offset; }
+
+  // ===== geometry =====
+  const IMG_W = 2400, IMG_H = 1800;
+  function fitStage(){
+    const W = content.clientWidth, H = content.clientHeight;
+    const s = Math.max(W/IMG_W, H/IMG_H);
+    const w = IMG_W*s, h = IMG_H*s;
+    stage.style.width = w+'px'; stage.style.height = h+'px';
+    stage.style.left = ((W-w)/2)+'px'; stage.style.top = (H-h)+'px';
+    render(true);
+  }
+  function inCourt(x,y){
+    let inside=false;
+    for(let i=0,j=COURT.length-1;i<COURT.length;j=i++){
+      const xi=COURT[i][0],yi=COURT[i][1],xj=COURT[j][0],yj=COURT[j][1];
+      if(((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi)) inside=!inside;
+    }
+    return inside;
+  }
+  function depthScale(y){ const t=Math.min(1,Math.max(0,(y-77.5)/22.5)); return 0.34 + 0.66*t; }
+
+  // ===== growth =====
+  function stageOf(p,t){
+    const age = t - p.t;
+    if(age >= STAGE_AT.gone) return 5;
+    if(age >= STAGE_AT.seeded) return 4;
+    if(age >= STAGE_AT.bloom) return 3;
+    if(age >= STAGE_AT.leafy) return 2;
+    if(age >= STAGE_AT.shoot) return 1;
+    return 0;
+  }
+  function isNight(t){ const h = new Date(t).getHours(); return h >= NIGHT_FROM || h < NIGHT_TO; }
+
+  function tick(){
+    const t = now();
+    let changed = false;
+    // self-seeding and dying
+    const born = [];
+    plants.forEach(p=>{
+      const st = stageOf(p,t);
+      if(st>=3 && !p.bloomed){ p.bloomed = true; lastBloom = p.t + STAGE_AT.bloom; changed = true; }
+      if(st>=4 && !p.scattered){
+        p.scattered = true; changed = true;
+        const n = Math.random()<SCATTER_CHANCE ? (Math.random()<0.25?2:1) : 0;
+        for(let i=0;i<n;i++){
+          const nx = p.x + (Math.random()*8-4), ny = p.y + (Math.random()*4-2);
+          if(inCourt(nx,ny) && neighbours(nx,ny) <= CROWD_MAX)
+            born.push({x:nx,y:ny,type:p.type,t:p.t + STAGE_AT.seeded + Math.random()*4*3600*1000,id:uid(),sway:3+Math.random()*3});
+        }
+      }
+    });
+    const before = plants.length;
+    plants = plants.filter(p=>stageOf(p,t) < 5).concat(born);
+    if(plants.length > MAX_PLANTS){ plants.sort((a,b)=>a.t-b.t); plants = plants.slice(plants.length-MAX_PLANTS); }
+    if(plants.length!==before || born.length) changed = true;
+    if(changed) save();
+    document.body.classList.toggle('night', isNight(t));
+    render(false);
+    clockTick(t);
+  }
+
+  function neighbours(x,y){ return plants.filter(p=>Math.hypot(p.x-x,p.y-y) < CROWD_RADIUS).length; }
+  function uid(){ return Math.random().toString(36).slice(2,9); }
+
+  // ===== rendering =====
+  const nodes = new Map();
+  function render(force){
+    const t = now(), night = isNight(t);
+    const W = stage.clientWidth, H = stage.clientHeight;
+    const live = new Set();
+    plants.forEach(p=>{
+      live.add(p.id);
+      const st = stageOf(p,t);
+      let el = nodes.get(p.id);
+      if(!el){
+        el = document.createElement('div'); el.className='plant'; el.dataset.st='-1'; el.dataset.n='';
+        el.style.setProperty('--sway',(p.sway||4)+'s');
+        el.style.zIndex = Math.round(p.y*10);
+        stage.appendChild(el); nodes.set(p.id,el);
+      }
+      if(force){
+        const sc = depthScale(p.y);
+        el.style.left = (p.x/100*W)+'px'; el.style.top = (p.y/100*H)+'px';
+        el.style.transform = 'scale('+(sc*(W/1400))+')';
+      }
+      const key = st+'|'+(night?1:0);
+      if(el.dataset.key !== key){
+        el.innerHTML = '<svg viewBox="0 0 100 120">'+P[p.type].draw(st,night)+'</svg>';
+        if(el.dataset.key !== undefined && el.dataset.key !== 'undefined'){ el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+        el.dataset.key = key;
+      }
+    });
+    nodes.forEach((el,id)=>{ if(!live.has(id)){ el.remove(); nodes.delete(id); } });
+    // status
+    const blooms = plants.filter(p=>stageOf(p,t)===3).length;
+    s1.textContent = plants.length + (plants.length===1?' plant':' plants') + (blooms? ', '+blooms+' in flower':'');
+    s2.textContent = lastBloom ? 'last bloom ' + fmt(lastBloom) : 'nothing has bloomed yet';
+  }
+  function fmt(ms){ const d=new Date(ms); return d.toLocaleDateString('en-AU',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'}).toLowerCase(); }
+
+  // ===== planting =====
+  function plantAt(clientX,clientY){
+    const r = stage.getBoundingClientRect();
+    const x = (clientX - r.left)/r.width*100, y = (clientY - r.top)/r.height*100;
+    if(!inCourt(x,y)) return;
+    let type = selected;
+    if(type==='any'){ const ks=Object.keys(P); type = ks[Math.floor(Math.random()*ks.length)]; }
+    const p = {x,y,type,t:now(),id:uid(),sway:3+Math.random()*3};
+    tk();
+    if(neighbours(x,y) > CROWD_MAX){
+      // too crowded: the seed goes in, then quietly doesn't take
+      const el = document.createElement('div'); el.className='plant fail';
+      const W = stage.clientWidth, H = stage.clientHeight;
+      el.style.left=(x/100*W)+'px'; el.style.top=(y/100*H)+'px'; el.style.transform='scale('+(depthScale(y)*(W/1400))+')';
+      el.innerHTML='<svg viewBox="0 0 100 120">'+seed()+'</svg>';
+      stage.appendChild(el); setTimeout(()=>el.remove(),4200);
+      return;
+    }
+    plants.push(p); save(); render(true);
+  }
+  stage.addEventListener('pointerdown', e=>{ if(e.button!==0) return; plantAt(e.clientX,e.clientY); });
+  stage.addEventListener('pointermove', e=>{
+    const r = stage.getBoundingClientRect();
+    stage.classList.toggle('court-hover', inCourt((e.clientX-r.left)/r.width*100,(e.clientY-r.top)/r.height*100));
+  });
+
+  // a small dry click, like a seed on gravel
+  let ac;
+  function tk(){
+    try{
+      ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type='triangle'; o.frequency.setValueAtTime(900,ac.currentTime); o.frequency.exponentialRampToValueAtTime(200,ac.currentTime+.06);
+      g.gain.setValueAtTime(.12,ac.currentTime); g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.08);
+      o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime+.09);
+    }catch(e){}
+  }
+
+  // ===== seed packets =====
+  function packet(key,label,svg){
+    const d = document.createElement('div'); d.className='packet'+(selected===key?' sel':''); d.dataset.key=key;
+    d.innerHTML = '<div class="pic"><svg viewBox="0 0 100 120">'+svg+'</svg></div><div class="nm">'+label+'</div>';
+    d.addEventListener('pointerdown', e=>{ e.stopPropagation(); selected=key; [...packetsEl.children].forEach(c=>c.classList.toggle('sel',c.dataset.key===key)); });
+    packetsEl.appendChild(d);
+  }
+  packet('any','Mixed seeds', seed()+`<ellipse cx="40" cy="110" rx="3.5" ry="2.2" fill="#3b2a1a"/><ellipse cx="62" cy="112" rx="3.5" ry="2.2" fill="#3b2a1a"/>`);
+  Object.keys(P).forEach(k=> packet(k, P[k].name, P[k].draw(3, P[k].night)));
+
+  // ===== menus =====
+  const menus = [...document.querySelectorAll('#menubar [data-menu]')];
+  function closeMenus(){ menus.forEach(m=>m.classList.remove('open')); }
+  menus.forEach(m=>{
+    m.addEventListener('pointerdown', e=>{
+      e.stopPropagation();
+      const item = e.target.closest('.drop div');
+      if(item){
+        if(item.dataset.wait){ offset += +item.dataset.wait; save(); tick(); }
+        if(item.dataset.act==='now'){ offset = 0; save(); tick(); }
+        if(item.dataset.act==='clear'){ plants = []; lastBloom = 0; save(); render(true); }
+        closeMenus(); return;
+      }
+      const open = m.classList.contains('open'); closeMenus(); if(!open) m.classList.add('open');
+    });
+  });
+  document.addEventListener('pointerdown', closeMenus);
+
+  // ===== clock =====
+  const clock = document.getElementById('clock');
+  function clockTick(t){
+    const d = new Date(t);
+    let h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+    clock.textContent = (offset? ' (skipped) ':'') + h + ':' + (m < 10 ? '0' : '') + m + ' ' + ap;
+  }
+
+  // ?demo scatters a sample of every stage so you can see the whole life cycle at once
+  const q = new URLSearchParams(location.search);
+  if(q.has('demo')){
+    plants = []; const ks = Object.keys(P); const ages=[0,STAGE_AT.shoot,STAGE_AT.leafy,STAGE_AT.bloom,STAGE_AT.seeded];
+    for(let i=0;i<26;i++){
+      let x,y; do{ x=Math.random()*100; y=78+Math.random()*22; }while(!inCourt(x,y));
+      plants.push({x,y,type:ks[i%ks.length],t:Date.now()-ages[(i*7)%5]-Math.random()*60000,id:uid(),sway:3+Math.random()*3});
+    }
+    save();
+  }
+  if(q.has('night')) offset = (function(){ const d=new Date(); const target=new Date(d); target.setHours(23,0,0,0); return target-d; })();
+
+  window.addEventListener('resize', fitStage);
+  fitStage(); tick();
+  setInterval(tick, 5000);
+})();
+</script>
+</body>
+</html>
