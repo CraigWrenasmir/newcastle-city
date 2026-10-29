@@ -68,6 +68,10 @@
   /* the photo, sized to cover, with a stage div matched to it so coordinates stay true */
   #stage{position:absolute;left:0;top:0;width:100px;height:100px;background:url("assets/bocce-web.jpg") 0 0 / 100% 100% no-repeat;cursor:default}
   #stage.court-hover{cursor:crosshair}
+  #stage.pluck-mode{cursor:default}
+  #stage.pluck-mode.plant-hover{cursor:grab}
+  .plant.plucked svg{animation:pluck .6s ease-in forwards}
+  @keyframes pluck{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(-60px) rotate(25deg);opacity:0}}
   #night{position:absolute;inset:0;pointer-events:none;background:#0b1a3a;opacity:0;transition:opacity 2s;mix-blend-mode:multiply}
   #night2{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,#16254d,#2a3a66);opacity:0;transition:opacity 2s;mix-blend-mode:screen}
   body.night #night{opacity:.72}
@@ -97,6 +101,7 @@
   .packet .pic svg{width:100%;height:100%;overflow:visible}
   .packet .nm{font-weight:bold}
   .packet.sel{outline:2px solid #000;outline-offset:1px;background:#fff}
+  .packet.tool{background:#e6e6e6}
   .packet.sel::after{content:"";position:absolute;left:-1px;top:-1px;right:-1px;height:6px;background:repeating-linear-gradient(90deg,#c33 0 4px,#fff 4px 8px)}
 
   /* status strip */
@@ -363,9 +368,30 @@
   function fmt(ms){ const d=new Date(ms); return d.toLocaleDateString('en-AU',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'}).toLowerCase(); }
 
   // ===== planting =====
-  function plantAt(clientX,clientY){
+  function plantNear(x,y){
+    // nearest plant whose drawn footprint covers the point
+    let best=null, bd=1e9;
+    plants.forEach(p=>{
+      const sc = depthScale(p.y);
+      const dx = Math.abs(p.x-x)/(2.2*sc), dy = (p.y-y)/(4.5*sc);   // ellipse around the plant, roots at p.y
+      const d = dx*dx + (dy<0 ? (dy*dy*4) : dy*dy);
+      if(d < 1 && d < bd){ bd=d; best=p; }
+    });
+    return best;
+  }
+  function pluckAt(x,y){
+    const p = plantNear(x,y);
+    if(!p) return;
+    plants = plants.filter(q=>q!==p); save();
+    const el = nodes.get(p.id);
+    if(el){ nodes.delete(p.id); el.classList.add('plucked'); setTimeout(()=>el.remove(),650); }
+    tk(1);
+    render(false);
+  }
+  function plantAt(clientX,clientY,shift){
     const r = stage.getBoundingClientRect();
     const x = (clientX - r.left)/r.width*100, y = (clientY - r.top)/r.height*100;
+    if(selected==='pluck' || shift){ pluckAt(x,y); return; }
     if(!inCourt(x,y)) return;
     let type = selected;
     if(type==='any'){ const ks=Object.keys(P); type = ks[Math.floor(Math.random()*ks.length)]; }
@@ -382,19 +408,25 @@
     }
     plants.push(p); save(); render(true);
   }
-  stage.addEventListener('pointerdown', e=>{ if(e.button!==0) return; plantAt(e.clientX,e.clientY); });
+  stage.addEventListener('pointerdown', e=>{ if(e.button!==0) return; plantAt(e.clientX,e.clientY,e.shiftKey); });
   stage.addEventListener('pointermove', e=>{
     const r = stage.getBoundingClientRect();
-    stage.classList.toggle('court-hover', inCourt((e.clientX-r.left)/r.width*100,(e.clientY-r.top)/r.height*100));
+    const x=(e.clientX-r.left)/r.width*100, y=(e.clientY-r.top)/r.height*100;
+    const plucking = selected==='pluck' || e.shiftKey;
+    stage.classList.toggle('pluck-mode', plucking);
+    stage.classList.toggle('plant-hover', plucking && !!plantNear(x,y));
+    stage.classList.toggle('court-hover', !plucking && inCourt(x,y));
   });
 
   // a small dry click, like a seed on gravel
   let ac;
-  function tk(){
+  function tk(pluck){
     try{
       ac = ac || new (window.AudioContext||window.webkitAudioContext)();
       const o = ac.createOscillator(), g = ac.createGain();
-      o.type='triangle'; o.frequency.setValueAtTime(900,ac.currentTime); o.frequency.exponentialRampToValueAtTime(200,ac.currentTime+.06);
+      o.type='triangle';
+      if(pluck){ o.frequency.setValueAtTime(220,ac.currentTime); o.frequency.exponentialRampToValueAtTime(520,ac.currentTime+.07); }
+      else { o.frequency.setValueAtTime(900,ac.currentTime); o.frequency.exponentialRampToValueAtTime(200,ac.currentTime+.06); }
       g.gain.setValueAtTime(.12,ac.currentTime); g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.08);
       o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime+.09);
     }catch(e){}
@@ -409,6 +441,9 @@
   }
   packet('any','Mixed seeds', seed()+`<ellipse cx="40" cy="110" rx="3.5" ry="2.2" fill="#3b2a1a"/><ellipse cx="62" cy="112" rx="3.5" ry="2.2" fill="#3b2a1a"/>`);
   Object.keys(P).forEach(k=> packet(k, P[k].name, P[k].draw(3, P[k].night)));
+  packet('pluck','Pluck', `<path d="M50 118 V70" stroke="#4c8f2e" stroke-width="3"/><path d="M50 118 q-10 -6 -14 -2 M50 118 q8 -8 14 -3" stroke="#8a6a3a" stroke-width="2" fill="none"/>
+    <path d="M30 40 q0 -10 8 -10 l0 22 M38 30 q0 -10 8 -10 l0 32 M46 24 q0 -10 8 -10 l0 38 M54 30 q0 -8 8 -8 l0 30 q10 10 2 24 q-6 10 -20 8 q-14 -2 -16 -16 l0 -14" fill="#f5d6b0" stroke="#000" stroke-width="1.5"/>`);
+  packetsEl.querySelector('[data-key=pluck]').classList.add('tool');
 
   // ===== menus =====
   const menus = [...document.querySelectorAll('#menubar [data-menu]')];
