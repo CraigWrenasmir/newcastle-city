@@ -178,11 +178,11 @@
     leafy:  8*60*1000,        // leaves after eight minutes
     bloom:  40*60*1000,       // a flower after forty minutes
     seeded: 6*3600*1000,      // goes to seed after six hours
-    gone:   40*3600*1000      // withers away after a day and a bit
+    gone:   5*24*3600*1000    // withers away after five days
   };
   const CROWD_RADIUS = 2.6;   // percent of stage width; too many neighbours and a seed won't take
   const CROWD_MAX = 2;
-  const SCATTER_CHANCE = 0.6;  // chance a seeded plant drops a seed nearby
+  const SCATTER_CHANCE = 0.9;  // chance a seeded plant drops a seed nearby
   const MAX_PLANTS = 140;      // the court can only hold so much
   const NIGHT_FROM = 19, NIGHT_TO = 6;   // local hours
 
@@ -296,8 +296,8 @@
   }
   function isNight(t){ const h = new Date(t).getHours(); return h >= NIGHT_FROM || h < NIGHT_TO; }
 
-  function tick(){
-    const t = now();
+  function tick(simTo){
+    const t = simTo || now();
     let changed = false;
     // self-seeding and dying
     const born = [];
@@ -306,11 +306,11 @@
       if(st>=3 && !p.bloomed){ p.bloomed = true; lastBloom = p.t + STAGE_AT.bloom; changed = true; }
       if(st>=4 && !p.scattered){
         p.scattered = true; changed = true;
-        const n = Math.random()<SCATTER_CHANCE ? (Math.random()<0.25?2:1) : 0;
+        const n = Math.random()<SCATTER_CHANCE ? (Math.random()<0.4?2:1) : 0;
         for(let i=0;i<n;i++){
           const nx = p.x + (Math.random()*8-4), ny = p.y + (Math.random()*4-2);
           if(inCourt(nx,ny) && neighbours(nx,ny) <= CROWD_MAX)
-            born.push({x:nx,y:ny,type:p.type,t:p.t + STAGE_AT.seeded + Math.random()*4*3600*1000,id:uid(),sway:3+Math.random()*3});
+            born.push({x:nx,y:ny,type:p.type,t:p.t + STAGE_AT.seeded + Math.random()*36*3600*1000,id:uid(),sway:3+Math.random()*3});
         }
       }
     });
@@ -419,7 +419,7 @@
       e.stopPropagation();
       const item = e.target.closest('.drop div');
       if(item){
-        if(item.dataset.wait){ offset += +item.dataset.wait; save(); tick(); }
+        if(item.dataset.wait){ skip(+item.dataset.wait); }
         if(item.dataset.act==='now'){ offset = 0; save(); tick(); }
         if(item.dataset.act==='clear'){ plants = []; lastBloom = 0; save(); render(true); }
         closeMenus(); return;
@@ -428,6 +428,13 @@
     });
   });
   document.addEventListener('pointerdown', closeMenus);
+
+  // step through skipped time a few hours at a time so seeds, blooms and deaths all happen in order
+  function skip(ms){
+    const from = now(), step = 3*3600*1000;
+    for(let t=from+step; t<from+ms; t+=step){ offset += step; tick(t); }
+    offset = (from + ms) - Date.now(); save(); tick();
+  }
 
   // ===== clock =====
   const clock = document.getElementById('clock');
